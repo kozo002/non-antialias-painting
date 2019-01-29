@@ -1,28 +1,211 @@
 <template>
   <div id="app">
-    <img src="./assets/logo.png">
-    <HelloWorld/>
+    <v-stage
+      class="stage"
+      ref="stage"
+      :config="stageConfig"
+    >
+      <v-layer ref="paintingCanvas">
+        <v-image
+          v-if="canvas"
+          :config="{
+            image: canvas,
+            x: 0,
+            y: 0,
+            width: stageConfig.width,
+            height: stageConfig.height,
+          }"
+          @mouseover="handleStageMouseOver"
+          @mouseout="handleStageMouseOut"
+          @mousemove="handleStageMouseMove"
+          @mousedown="handleStageMouseDown"
+          @mouseup="handleStageMouseUp"
+        />
+        <v-arc
+          :config="brushCursorConfig"
+        />
+      </v-layer>
+    </v-stage>
+    <label>
+      <input
+        type="radio"
+        name="mode"
+        :checked="currentMode === Mode.Brush"
+        @change="handleBrushRadioButtonChange"
+      />
+      Brush
+    </label>
+    <label>
+      <input
+        type="radio"
+        name="mode"
+        :checked="currentMode === Mode.Eraser"
+        @change="handleEraserRadioButtonChange"
+      />
+      Eraser
+    </label>
   </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld'
+import circle from './assets/11.gif'
+
+const Mode = {
+  Brush: 'brush',
+  Eraser: 'eraser'
+}
+
+function distanceBetween (point1, point2) {
+  return Math.sqrt(Math.pow(point2.x - point1.x, 2) + Math.pow(point2.y - point1.y, 2))
+}
+function angleBetween (point1, point2) {
+  return Math.atan2(point2.x - point1.x, point2.y - point1.y)
+}
 
 export default {
   name: 'App',
-  components: {
-    HelloWorld
+
+  data: () => ({
+    stageConfig: {},
+    size: 11,
+    brushCursorConfig: {
+      fill: '#000000',
+      strokeWidth: 0,
+      x: 0,
+      y: 0,
+      perfectDrawEnabled: false,
+      angle: 360
+    },
+    isMouseOver: false,
+    Mode,
+    currentMode: Mode.Brush,
+    isPainting: false,
+    beginningPosition: null,
+    canvas: null,
+    context: null
+  }),
+
+  created () {
+    window.addEventListener('resize', this.handleWindowResize)
+
+    this.exampleImage = new Image()
+    this.exampleImage.src = circle
+
+    this.canvas = document.createElement('canvas')
+    this.canvas.width = window.innerWidth
+    this.canvas.height = 500
+    this.context = this.canvas.getContext('2d')
+  },
+
+  mounted () {
+    this.$nextTick(() => {
+      this.handleWindowResize()
+    })
+  },
+
+  beforeDestroy () {
+    window.removeEventListener('resize', this.handleWindowResize)
+  },
+
+  watch: {
+    currentMode (currentMode) {
+      if (!this.context) { return false }
+      this.context.globalCompositeOperation = this.canvasOperation
+    }
+  },
+
+  computed: {
+    canvasOperation () {
+      return this.currentMode === Mode.Brush
+        ? 'source-over'
+        : 'destination-out'
+    }
+  },
+
+  methods: {
+    handleWindowResize () {
+      this.stageConfig = {
+        ...this.stageConfig,
+        width: window.innerWidth,
+        height: 500
+      }
+    },
+
+    handleStageMouseOver () {
+      this.isMouseOver = true
+    },
+
+    handleStageMouseOut () {
+      this.isMouseOver = false
+      this.isPainting = false
+    },
+
+    handleStageMouseMove (e) {
+      const halfSize = (this.size - (this.size % 2)) / 2
+      const stage = this.$refs.stage.getStage()
+      const position = stage.getPointerPosition()
+      const size = { innerRadius: halfSize - 1, outerRadius: halfSize }
+      this.brushCursorConfig = {
+        ...this.brushCursorConfig,
+        ...size,
+        x: Math.round(position.x),
+        y: Math.round(position.y)
+      }
+
+      if (!this.isPainting || !this.beginningPosition) { return false }
+      const dist = distanceBetween(this.beginningPosition, position)
+      const angle = angleBetween(this.beginningPosition, position)
+      for (let i = 0; i < dist; i += 5) {
+        const x = this.beginningPosition.x + (Math.sin(angle) * i) - halfSize
+        const y = this.beginningPosition.y + (Math.cos(angle) * i) - halfSize
+        this.context.drawImage(this.exampleImage, Math.round(x), Math.round(y))
+      }
+
+      this.$refs.paintingCanvas.getStage().batchDraw()
+      this.beginningPosition = position
+    },
+
+    handleBrushRadioButtonChange (e) {
+      if (e.target.checked) {
+        this.currentMode = Mode.Brush
+      }
+    },
+
+    handleEraserRadioButtonChange (e) {
+      if (e.target.checked) {
+        this.currentMode = Mode.Eraser
+      }
+    },
+
+    handleStageMouseDown () {
+      this.isPainting = true
+      this.beginningPosition = this.$refs.stage.getStage().getPointerPosition()
+    },
+
+    handleStageMouseUp () {
+      this.isPainting = false
+      this.beginningPosition = null
+    }
   }
 }
 </script>
 
 <style>
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #ddd;
+}
+
 #app {
   font-family: 'Avenir', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  margin-top: 60px;
+}
+
+.stage {
+  background-color: #fff;
 }
 </style>
