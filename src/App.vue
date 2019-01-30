@@ -26,29 +26,43 @@
         />
       </v-layer>
     </v-stage>
-    <label>
+    <div style="margin-bottom:100px">
+      <label>
+        <input
+          type="radio"
+          name="mode"
+          :checked="currentMode === Mode.Brush"
+          @change="handleBrushRadioButtonChange"
+        />
+        Brush
+      </label>
+      <label>
+        <input
+          type="radio"
+          name="mode"
+          :checked="currentMode === Mode.Eraser"
+          @change="handleEraserRadioButtonChange"
+        />
+        Eraser
+      </label>
+    </div>
+    <div style="text-align:left">
       <input
-        type="radio"
-        name="mode"
-        :checked="currentMode === Mode.Brush"
-        @change="handleBrushRadioButtonChange"
+        type="range"
+        min="1"
+        max="100"
+        step="1"
+        :value="size"
+        @input="handleSizeChange"
       />
-      Brush
-    </label>
-    <label>
-      <input
-        type="radio"
-        name="mode"
-        :checked="currentMode === Mode.Eraser"
-        @change="handleEraserRadioButtonChange"
-      />
-      Eraser
-    </label>
+      {{size}}
+    </div>
   </div>
 </template>
 
 <script>
 import circle from './assets/11.gif'
+import DynamicStampMaker from './DynamicStampMaker'
 
 const Mode = {
   Brush: 'brush',
@@ -82,7 +96,9 @@ export default {
     isPainting: false,
     beginningPosition: null,
     canvas: null,
-    context: null
+    context: null,
+    isSimple: false,
+    isSimpleStamp: false
   }),
 
   created () {
@@ -95,6 +111,8 @@ export default {
     this.canvas.width = window.innerWidth
     this.canvas.height = 500
     this.context = this.canvas.getContext('2d')
+
+    this.stampMaker = new DynamicStampMaker()
   },
 
   mounted () {
@@ -144,7 +162,8 @@ export default {
       const halfSize = (this.size - (this.size % 2)) / 2
       const stage = this.$refs.stage.getStage()
       const position = stage.getPointerPosition()
-      const size = { innerRadius: halfSize - 1, outerRadius: halfSize }
+      const innerRadius = halfSize - 1 < 0 ? 0 : halfSize - 1
+      const size = { innerRadius, outerRadius: halfSize }
       this.brushCursorConfig = {
         ...this.brushCursorConfig,
         ...size,
@@ -153,12 +172,34 @@ export default {
       }
 
       if (!this.isPainting || !this.beginningPosition) { return false }
-      const dist = distanceBetween(this.beginningPosition, position)
-      const angle = angleBetween(this.beginningPosition, position)
-      for (let i = 0; i < dist; i += 5) {
-        const x = this.beginningPosition.x + (Math.sin(angle) * i) - halfSize
-        const y = this.beginningPosition.y + (Math.cos(angle) * i) - halfSize
+
+      if (this.isSimple) {
+        this.context.imageSmoothingEnabled = false
+        this.context.strokeStyle = '#000'
+        this.context.lineWidth = this.size
+        this.context.lineJoin = 'round'
+        this.context.beginPath()
+        const { x: startX, y: startY } = this.beginningPosition
+        this.context.moveTo(startX, startY)
+        const { x: destX, y: destY } = position
+        this.context.lineTo(destX, destY)
+        this.context.closePath()
+        this.context.stroke()
+      } else if (this.isSimpleStamp) {
+        const x = position.x - halfSize
+        const y = position.y - halfSize
         this.context.drawImage(this.exampleImage, Math.round(x), Math.round(y))
+      } else {
+        const dist = distanceBetween(this.beginningPosition, position)
+        const angle = angleBetween(this.beginningPosition, position)
+        const stamp = this.stampMaker.make({
+          size: this.size
+        })
+        for (let i = 0; i < dist; i += 1) {
+          const x = this.beginningPosition.x + (Math.sin(angle) * i) - halfSize
+          const y = this.beginningPosition.y + (Math.cos(angle) * i) - halfSize
+          this.context.drawImage(stamp, Math.round(x), Math.round(y))
+        }
       }
 
       this.$refs.paintingCanvas.getStage().batchDraw()
@@ -185,6 +226,11 @@ export default {
     handleStageMouseUp () {
       this.isPainting = false
       this.beginningPosition = null
+    },
+
+    handleSizeChange (e) {
+      this.size = parseInt(e.target.value)
+      this.stampMaker.make({ size: this.size, color: '#000' })
     }
   }
 }
