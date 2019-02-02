@@ -1,7 +1,3 @@
-// function isInt (n) {
-//   return Number(n) === n && n % 1 === 0
-// }
-
 const HexPattern = /^#?[0-9A-Fa-f]{1,2}[0-9A-Fa-f]{1,2}[0-9A-Fa-f]{1,2}$/
 const RGBPattern = /^rgb\((\s+)?[0-9]{1,3},(\s+)?[0-9]{1,3},(\s+)?[0-9]{1,3}(\s+)?\)$/
 
