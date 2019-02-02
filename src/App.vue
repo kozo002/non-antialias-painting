@@ -70,18 +70,11 @@
 
 <script>
 import circle from './assets/11.gif'
-import DynamicStampMaker from './DynamicStampMaker'
+import PxBrush from './PxBrush'
 
 const Mode = {
   Brush: 'brush',
   Eraser: 'eraser'
-}
-
-function distanceBetween (point1, point2) {
-  return Math.sqrt(Math.pow(point2.x - point1.x, 2) + Math.pow(point2.y - point1.y, 2))
-}
-function angleBetween (point1, point2) {
-  return Math.atan2(point2.x - point1.x, point2.y - point1.y)
 }
 
 export default {
@@ -121,7 +114,7 @@ export default {
     this.canvas.height = 500
     this.context = this.canvas.getContext('2d')
 
-    this.stampMaker = new DynamicStampMaker()
+    this.pxBrush = new PxBrush(this.canvas)
   },
 
   mounted () {
@@ -136,13 +129,6 @@ export default {
 
   beforeDestroy () {
     window.removeEventListener('resize', this.handleWindowResize)
-  },
-
-  watch: {
-    currentMode (currentMode) {
-      if (!this.context) { return false }
-      this.context.globalCompositeOperation = this.canvasOperation
-    }
   },
 
   computed: {
@@ -203,18 +189,23 @@ export default {
         const y = position.y - halfSize
         this.context.drawImage(this.exampleImage, Math.round(x), Math.round(y))
       } else {
-        const dist = distanceBetween(this.beginningPosition, position)
-        const angle = angleBetween(this.beginningPosition, position)
-        const stamp = this.stampMaker.make({
-          size: this.size,
-          color: this.color
-        })
-        for (let i = 0; i < dist; i += 1) {
-          const x = this.beginningPosition.x + (Math.sin(angle) * i) - halfSize
-          const y = this.beginningPosition.y + (Math.cos(angle) * i) - halfSize
-          requestAnimationFrame(() => {
-            this.context.drawImage(stamp, Math.round(x), Math.round(y))
-          })
+        switch (this.currentMode) {
+          case Mode.Brush:
+            this.pxBrush.draw({
+              from: this.beginningPosition,
+              to: position,
+              size: this.size,
+              color: this.color
+            })
+            break
+          case Mode.Eraser:
+            this.pxBrush.erase({
+              from: this.beginningPosition,
+              to: position,
+              size: this.size,
+              color: this.color
+            })
+            break
         }
       }
 
@@ -237,6 +228,13 @@ export default {
     handleStageMouseDown () {
       this.isPainting = true
       this.beginningPosition = this.$refs.stage.getStage().getPointerPosition()
+      this.pxBrush.draw({
+        from: this.beginningPosition,
+        to: this.beginningPosition,
+        size: this.size,
+        color: this.color
+      })
+      this.$refs.paintingCanvas.getStage().batchDraw()
     },
 
     handleStageMouseUp () {
@@ -246,7 +244,6 @@ export default {
 
     handleSizeChange (e) {
       this.size = parseInt(e.target.value)
-      this.stampMaker.make({ size: this.size, color: this.color })
     },
 
     handleColorChange (e) {

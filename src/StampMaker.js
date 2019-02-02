@@ -1,7 +1,7 @@
 const HexPattern = /^#?[0-9A-Fa-f]{1,2}[0-9A-Fa-f]{1,2}[0-9A-Fa-f]{1,2}$/
 const RGBPattern = /^rgb\((\s+)?[0-9]{1,3},(\s+)?[0-9]{1,3},(\s+)?[0-9]{1,3}(\s+)?\)$/
 
-export default class DynamicStampMaker {
+export default class StampMaker {
   constructor () {
     this.canvases = {}
   }
@@ -46,7 +46,6 @@ export default class DynamicStampMaker {
     size = size + (size % 2)
     canvas.width = size
     canvas.height = size
-    canvas.style = 'margin:0 2px 2px 0'
 
     const context = canvas.getContext('2d')
     const imageData = context.createImageData(size, size)
