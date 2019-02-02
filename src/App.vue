@@ -47,6 +47,7 @@
       </label>
     </div>
     <div style="text-align:left">
+      Size
       <input
         type="range"
         min="1"
@@ -56,6 +57,13 @@
         @input="handleSizeChange"
       />
       {{size}}
+      /
+      Color
+      <input
+        type="color"
+        :value="color"
+        @change="handleColorChange"
+      />
     </div>
   </div>
 </template>
@@ -82,6 +90,7 @@ export default {
   data: () => ({
     stageConfig: {},
     size: 11,
+    color: '#000000',
     brushCursorConfig: {
       fill: '#000000',
       strokeWidth: 0,
@@ -113,11 +122,19 @@ export default {
     this.context = this.canvas.getContext('2d')
 
     this.stampMaker = new DynamicStampMaker()
+    const parsedColor = this.stampMaker.parseColor('#123123')
+    console.log(parsedColor)
+    const parsedColor2 = this.stampMaker.parseColor('rgb( 23,    200, 100)')
+    console.log(parsedColor2)
   },
 
   mounted () {
     this.$nextTick(() => {
       this.handleWindowResize()
+
+      this.$el.querySelectorAll('canvas').forEach(canvas => {
+        canvas.setAttribute('moz-opeque', true)
+      })
     })
   },
 
@@ -193,12 +210,15 @@ export default {
         const dist = distanceBetween(this.beginningPosition, position)
         const angle = angleBetween(this.beginningPosition, position)
         const stamp = this.stampMaker.make({
-          size: this.size
+          size: this.size,
+          color: this.color
         })
         for (let i = 0; i < dist; i += 1) {
           const x = this.beginningPosition.x + (Math.sin(angle) * i) - halfSize
           const y = this.beginningPosition.y + (Math.cos(angle) * i) - halfSize
-          this.context.drawImage(stamp, Math.round(x), Math.round(y))
+          requestAnimationFrame(() => {
+            this.context.drawImage(stamp, Math.round(x), Math.round(y))
+          })
         }
       }
 
@@ -230,7 +250,11 @@ export default {
 
     handleSizeChange (e) {
       this.size = parseInt(e.target.value)
-      this.stampMaker.make({ size: this.size, color: '#000' })
+      this.stampMaker.make({ size: this.size, color: '#ff0000' })
+    },
+
+    handleColorChange (e) {
+      this.color = e.target.value
     }
   }
 }
