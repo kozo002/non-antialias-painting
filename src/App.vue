@@ -122,10 +122,6 @@ export default {
     this.context = this.canvas.getContext('2d')
 
     this.stampMaker = new DynamicStampMaker()
-    const parsedColor = this.stampMaker.parseColor('#123123')
-    console.log(parsedColor)
-    const parsedColor2 = this.stampMaker.parseColor('rgb( 23,    200, 100)')
-    console.log(parsedColor2)
   },
 
   mounted () {
@@ -250,7 +246,7 @@ export default {
 
     handleSizeChange (e) {
       this.size = parseInt(e.target.value)
-      this.stampMaker.make({ size: this.size, color: '#ff0000' })
+      this.stampMaker.make({ size: this.size, color: this.color })
     },
 
     handleColorChange (e) {

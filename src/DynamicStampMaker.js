@@ -64,7 +64,6 @@ export default class DynamicStampMaker {
     this.fillCircle(imageData, _color)
     context.putImageData(imageData, 0, 0)
     this.canvases[_strColor][size] = canvas
-    // document.body.appendChild(canvas)
     return canvas
   }
 
