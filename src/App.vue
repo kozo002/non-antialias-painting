@@ -259,7 +259,7 @@ export default {
     },
 
     handleSaveButtonClick () {
-      this.pxBrush.exportPNGFile('result.png').then(file => {
+      this.pxBrush.exportAsPNG('result.png').then(file => {
         const url = URL.createObjectURL(file)
         const a = document.createElement('a')
         a.download = file.name

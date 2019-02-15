@@ -25,7 +25,7 @@ export default class PxBrush {
     this.context.imageSnoothingEnabled = false
   }
 
-  exportPNGFile (fileName) {
+  exportAsPNG (fileName) {
     return new Promise((resolve, reject) => {
       try {
         const resultCanvas = document.createElement('canvas')
