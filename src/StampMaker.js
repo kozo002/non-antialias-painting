@@ -35,31 +35,36 @@ export default class StampMaker {
   }
 
   make ({ size, color }) {
-    const _color = this.parseColor(color)
-    const _strColor = JSON.stringify(_color)
-    this.canvases[_strColor] = this.canvases[_strColor] || {}
+    try {
+      size = size * window.devicePixelRatio
+      const _color = this.parseColor(color)
+      const _strColor = JSON.stringify(_color)
+      this.canvases[_strColor] = this.canvases[_strColor] || {}
 
-    if (this.canvases[_strColor][size] != null) {
-      return this.canvases[_strColor][size]
-    }
-    const canvas = document.createElement('canvas')
-    size = size + (size % 2)
-    canvas.width = size
-    canvas.height = size
+      if (this.canvases[_strColor][size] != null) {
+        return this.canvases[_strColor][size]
+      }
+      const canvas = document.createElement('canvas')
+      size = size + (size % 2)
+      canvas.width = size
+      canvas.height = size
 
-    const context = canvas.getContext('2d')
-    const imageData = context.createImageData(size, size)
-    for (let i = 0; i < imageData.data.length; i += 4) {
-      imageData.data[i] = 255
-      imageData.data[i + 1] = 255
-      imageData.data[i + 2] = 255
-      imageData.data[i + 3] = 0
+      const context = canvas.getContext('2d')
+      const imageData = context.createImageData(size, size)
+      for (let i = 0; i < imageData.data.length; i += 4) {
+        imageData.data[i] = 255
+        imageData.data[i + 1] = 255
+        imageData.data[i + 2] = 255
+        imageData.data[i + 3] = 0
+      }
+      this.plotCircle(size * 2, (size * 4) * (size / 2), size / 2, imageData, size, _color)
+      this.fillCircle(imageData, _color)
+      context.putImageData(imageData, 0, 0)
+      this.canvases[_strColor][size] = canvas
+      return canvas
+    } catch (err) {
+      console.error(err)
     }
-    this.plotCircle(size * 2, (size * 4) * (size / 2), size / 2, imageData, size, _color)
-    this.fillCircle(imageData, _color)
-    context.putImageData(imageData, 0, 0)
-    this.canvases[_strColor][size] = canvas
-    return canvas
   }
 
   plotCircle (xm, ym, r, imageData, size, color) {

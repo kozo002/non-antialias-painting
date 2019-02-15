@@ -64,6 +64,8 @@
         :value="color"
         @change="handleColorChange"
       />
+      <br />
+      <button @click="handleSaveButtonClick">save</button>
     </div>
   </div>
 </template>
@@ -71,6 +73,8 @@
 <script>
 import circle from './assets/11.gif'
 import PxBrush from './PxBrush'
+
+window.Konva.pixelRatio = window.devicePixelRatio || 1
 
 const Mode = {
   Brush: 'brush',
@@ -120,10 +124,6 @@ export default {
   mounted () {
     this.$nextTick(() => {
       this.handleWindowResize()
-
-      this.$el.querySelectorAll('canvas').forEach(canvas => {
-        canvas.setAttribute('moz-opeque', true)
-      })
     })
   },
 
@@ -136,15 +136,22 @@ export default {
       return this.currentMode === Mode.Brush
         ? 'source-over'
         : 'destination-out'
+    },
+
+    dpr () {
+      return window.devicePixelRatio
     }
   },
 
   methods: {
     handleWindowResize () {
+      const width = window.innerWidth
+      const height = 500
       this.stageConfig = {
         ...this.stageConfig,
-        width: window.innerWidth,
-        height: 500
+        width,
+        height
+        // scale: { x: this.dpr, y: this.dpr }
       }
     },
 
@@ -228,7 +235,8 @@ export default {
     handleStageMouseDown () {
       this.isPainting = true
       this.beginningPosition = this.$refs.stage.getStage().getPointerPosition()
-      this.pxBrush.draw({
+      const method = this.currentMode === Mode.Brush ? 'draw' : 'erase'
+      this.pxBrush[method]({
         from: this.beginningPosition,
         to: this.beginningPosition,
         size: this.size,
@@ -248,6 +256,18 @@ export default {
 
     handleColorChange (e) {
       this.color = e.target.value
+    },
+
+    handleSaveButtonClick () {
+      this.pxBrush.exportPNGFile('result.png').then(file => {
+        const url = URL.createObjectURL(file)
+        const a = document.createElement('a')
+        a.download = file.name
+        a.href = url
+        const event = document.createEvent('MouseEvents')
+        event.initMouseEvent('click')
+        a.dispatchEvent(event)
+      })
     }
   }
 }
